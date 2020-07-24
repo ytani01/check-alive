@@ -4,6 +4,12 @@
 #
 MYNAME=`basename $0`
 
+MAIL_TO=root@ytani.net
+
+MAIL_SUBJECT="${MYNAME}@`hostname`"
+MAIL_CMD=/usr/bin/mail
+MAIL_FILE=/tmp/${MYNAME}.txt
+
 OPT_VERB=
 
 ###
@@ -49,15 +55,34 @@ if [ -z "$HOSTS" ]; then
     exit 1
 fi
 
+### main
+
+if [ -n "$OPT_VERB" ]; then
+   tsecho "=== start ==="
+fi
+tsecho "=== start ===" > $MAIL_FILE 2>&1
+
 RET=0
 for h in $HOSTS; do
     tseval ping -c 2 $h > /dev/null
-    if [ $? -ne 0 ]; then
-        tsecho "$h: down !?"
-        RET=$?
+    _RET=$?
+    if [ $_RET -ne 0 ]; then
+        RET=$_RET
+        tsecho "x $h: down !?"
+        tsecho "x $h: down !?" >> $MAIL_FILE 2>&1
     elif [ -n "$OPT_VERB" ]; then
-        tsecho "$h: up"
+        tsecho "o $h: up"
+        tsecho "o $h: up" >> $MAIL_FILE 2>&1
     fi
 done
+
+if [ -n "$OPT_VERB" ]; then
+    tsecho "===  end  ==="
+fi
+tsecho "===  end  ===" >> $MAIL_FILE 2>&1
+
+if [ $RET -ne 0 ]; then
+    tseval "$MAIL_CMD -s "$MAIL_SUBJECT" $MAIL_TO < $MAIL_FILE"
+fi
 
 exit $RET
