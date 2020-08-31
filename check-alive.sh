@@ -8,7 +8,7 @@ MAIL_TO=root@ytani.net
 
 MAIL_SUBJECT="${MYNAME}@`hostname`"
 MAIL_CMD=/usr/bin/mail
-MAIL_FILE=/tmp/${MYNAME}.txt
+MAIL_FILE=/tmp/${MYNAME}$$.txt
 
 OPT_VERB=
 
@@ -64,15 +64,20 @@ tsecho "=== start ===" > $MAIL_FILE 2>&1
 
 RET=0
 for h in $HOSTS; do
-    tseval ping -c 2 $h > /dev/null
+    if [ -n "$OPT_VERB" ]; then
+        tseval ping -c 2 $h
+    fi
+    tseval ping -c 2 $h >> $MAIL_FILE 2>&1
     _RET=$?
     if [ $_RET -ne 0 ]; then
         RET=$_RET
-        tsecho "x $h: down !?"
-        tsecho "x $h: down !?" >> $MAIL_FILE 2>&1
+        MSG="x $h: down !? ($RET)"
+        tsecho "$MSG"
+        tsecho "$MSG" >> $MAIL_FILE 2>&1
     elif [ -n "$OPT_VERB" ]; then
-        tsecho "o $h: up"
-        tsecho "o $h: up" >> $MAIL_FILE 2>&1
+        MSG="o $h: up"
+        tsecho "$MSG"
+        tsecho "$MSG" >> $MAIL_FILE 2>&1
     fi
 done
 
@@ -85,4 +90,5 @@ if [ $RET -ne 0 ]; then
     tseval "$MAIL_CMD -s "$MAIL_SUBJECT" $MAIL_TO < $MAIL_FILE"
 fi
 
+rm -f $MAIL_FILE
 exit $RET
